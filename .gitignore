@@ -38,3 +38,7 @@ Probe_summary_files/*
 Probe_summary.html
 
 *.gz
+
+Sequence_analysis.md
+
+RNA-seq.md
