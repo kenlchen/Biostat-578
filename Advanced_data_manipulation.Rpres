@@ -571,7 +571,7 @@ merge(DT1, DT2, all=FALSE) ## inner join
 Speed example
 =============
 
-```{r, cache=TRUE}
+{r, cache=TRUE}
 library(data.table); library(microbenchmark)
 DT1 <- data.table(
   x=do.call(paste, expand.grid(letters, letters, letters, letters)), 
@@ -583,7 +583,6 @@ DF1 <- as.data.frame(DT1)
 DF2 <- as.data.frame(DT2)
 setkey(DT1, x); setkey(DT2, x)
 microbenchmark( DT=merge(DT1, DT2), DF=merge.data.frame(DF1, DF2), replications=5)
-```
 
 Subset joins
 ============
