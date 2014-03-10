@@ -127,8 +127,6 @@ dbGetQuery(geo_con, "SELECT gse.gse, gsm.gsm, gsm.title FROM (gse JOIN gse_gsm O
 gse_gsm contains the gse number that is associated with the gsm number. 
 j is the name of a table that is created by joining gse and ges_gsm. Then j is joined with table gsm. 
 
-
-
 Finding a study (suite)
 ===============
 
@@ -149,7 +147,6 @@ library(data.table)
 manu <- data.table(dbGetQuery(geo_con, "SELECT manufacturer FROM gpl"))
 manu[,list(length(manufacturer)), by=manufacturer]
 ```
-
 
 Finding specific data
 =====================
@@ -180,6 +177,7 @@ GSE29617_set <- getGEO("GSE29617")[[1]]
 ```
 which returns (a list of) an ExpressionSet (eSet).
 
+
 The eSet class
 ==================
 
@@ -196,7 +194,7 @@ An eSet contains the necessary "parts" to summarize an experiment.
 Classes and methods
 ====================
 
-**Everything in R is an OBJECT.**
+**Everything in R is an OBJECT
 
 
 - A class is the definition of an object.
@@ -224,6 +222,7 @@ head(methods(class="data.frame"))
 showMethods(class="eSet")
 ```
 
+
 The eSet (suite)
 ==========================
   
@@ -237,7 +236,6 @@ in particular, the following methods are rather convenient:
 - phenoData(obj); phenoData(obj) `<-` value: access or assign phenoData
 - experimentData(obj); experimentData(obj) `<-` value: access or assign experimentData
 - annotation(obj); annotation(obj) `<-` value: access or assign annotation
-
 
 
 The ExpressionSet subclass
@@ -267,6 +265,7 @@ pData(GSE29617_set)[1:2,1:2]
 fData(GSE29617_set)[1:2,1:2]
 ```
 
+
 The ExpressionSet subclass (suite)
 ==========================
   So the `ExpressionSet` objects facilitate the encapsulation of everything that's needed to summarize and analyze an experiment. Specific elements can be access with the `@` operator but many classes have convenient accessor methods.
@@ -284,7 +283,6 @@ GEO also provides access to raw data that can be downloaded with `GEOquery`.
 
 
 ```{r download-raw-data, eval = FALSE}
-#don't run this block, already run above.
 # Download all raw data. This should only be evaluated once
 # Then the data would be stored locally in the data directory
 getGEOSuppFiles("GSE29617", makeDirectory = FALSE, baseDir = "./Data/GEO/")
@@ -295,8 +293,90 @@ getGEOSuppFiles("GSE29617", makeDirectory = TRUE, baseDir = "./")
 untar("./GSE29617/GSE29617_RAW.tar", exdir="./GSE29617", tar = Sys.getenv("TAR"))
 ```
 
-test environment
-==============================
+Starting from the raw data
+==========================
+
+Now that we have the Affymetrix raw data (CEL) files, we can apply some of the concepts we've discussed related to normalization and probe summary. We first need to load the appropriate package
+
+
 ```{r}
-b
+biocLite("affy")
 ```
+```{r}
+library(affy)
+```
+
+then we use the following commands
+```{r cache=TRUE}
+# Read the CEL file and creates and AffyBatch
+GSE29617_affyBatch <- ReadAffy(celfile.path="Data/GEO/GSE29617/")
+# Normalize and summarize the data
+GSE29617_set2 <- rma(GSE29617_affyBatch)
+```
+
+Starting from the raw data
+==========================
+
+Let's check the results and compare to the expression matrix that was submitted to GEO
+```{r}
+exprs(GSE29617_set2)[1:2,1:2]
+```
+
+The rows are the features (i.e., probes). Columns are the samples.
+
+What are those probes?
+======================
+
+```{r}
+# We first need to install our annotation package
+library(BiocInstaller)
+# Note that you don't have to use source anymore!
+biocLite("hthgu133a.db")
+```
+
+
+
+```{r}
+library(hthgu133a.db)
+probe_ids <- rownames(GSE29617_set2)
+probe_data <- select(hthgu133a.db, keys = probe_ids, columns = "SYMBOL", keytype = "PROBEID")
+probe_data[1,]
+```
+This didn't work very well, did it?
+The problem is that the probe IDs in hthgu133a.db have a different naming scheme than those in GSE29617_set2. This is fixed on the next slide.
+
+What are those probes? (Suite)
+======================
+
+Let's fix this: Replace _PM with <empty> for the probe id names in GSE29617_set2
+```{r, warning=TRUE}
+probe_ids <- gsub("_PM","",rownames(GSE29617_set2))
+probe_data <- select(hthgu133a.db, keys = probe_ids, columns = "SYMBOL", keytype = "PROBEID")
+probe_data[1, ]
+```
+What's the warning? Some probes match up with multiple genes, therefore those probe IDs will have more than one record.
+
+What are those probes? (Suite)
+======================
+
+
+This gives us too many rows, what do we do? Concatenate the gene names so that there will be one row per probe ID.
+
+```{r, cache=TRUE}
+library(data.table)
+probe_data_dt <- data.table(probe_data)
+probe_data_dt_unique <- probe_data_dt[,list(SYMBOL=paste(SYMBOL,collapse=";")),by="PROBEID"]
+probe_data_dt_unique[SYMBOL%like%";"]
+```
+
+Completing our ExpressionSet
+============================
+
+```{r}
+annotaded_probes <- data.frame(probe_data_dt_unique)
+rownames(annotaded_probes) <- rownames(GSE29617_set2)
+fData(GSE29617_set2) <- annotaded_probes
+head(fData(GSE29617_set2))
+```
+
+Now you're ready to get the data that you will have to analyze for your second homework. 

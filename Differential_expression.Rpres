@@ -289,7 +289,7 @@ The LIMMA package
 
 Let's first install Limma:
 
-```{r}
+```{r eval =FALSE}
 source("http://bioconductor.org/biocLite.R")
 biocLite("limma")
 ```
@@ -303,7 +303,6 @@ library(data.table)
 ```
 
 but we need some data!
-
 
 Getting some data with GEOquery
 ===============================
@@ -345,8 +344,6 @@ pData(gds_new[[2]]) <- sanitize_pdata(pData(gds_new[[2]]))
 pData(gds_new[[3]]) <- sanitize_pdata(pData(gds_new[[3]]))
 ```
 
-
-
 Model set-up and estimation
 ================================
 
@@ -368,6 +365,7 @@ mm_TIV_08 <- model.matrix(~ptid+time, TIV_08) # design matrix
 fit_TIV_08 <- lmFit(TIV_08, mm_TIV_08) #Fit linear model for each gene given a series of arrays
 ebay_TIV_08 <- eBayes(fit_TIV_08) # compute moderated t-statistics, moderated F-statistic, and log-odds of differential expression
 ```
+
 
 Testing specific hypothesis
 ============================
@@ -451,7 +449,7 @@ Your turn!
 
 Ok, let's try to repeat what we've done with the TIV07 cohort. 
 
-```{r, eval=FALSE, echo=FALSE}
+```{r}
 pd <- pData(gds[[1]][, grepl("2008-TIV", pData(gds[[1]])$description)])
 hai_0 <- sapply(strsplit(as.character(pd$characteristics_ch1.8), ": "), "[", 2)
 hai_28 <- sapply(strsplit(as.character(pd$characteristics_ch1.9), ":"), "[", 2)
@@ -460,7 +458,7 @@ pData(TIV_08)$hai_fold <- hai_fold
 ```
 
 
-```{r, eval=FALSE, echo=FALSE}
+```{r}
 mm_TIV_08 <- model.matrix(~time+hai_fold+ptid, TIV_08)
 fit_TIV_08 <- lmFit(TIV_08, mm_TIV_08)
 ebay_TIV_08 <- eBayes(fit_TIV_08)
